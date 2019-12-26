@@ -5,7 +5,7 @@ spring:
   application:
     name: gassman-payment-service
   rabbitmq:
-    addresses:
+    addresses: amqp://***
   cloud:
     stream:
       bindings:
@@ -22,5 +22,5 @@ eureka:
       defaultZone: http://localhost:8880/eureka
 
 paypal:
-  clientId:
-  clientSecret: 
+  clientId: YOUR_CLIENT_ID
+  clientSecret: YOUR_SECRET
