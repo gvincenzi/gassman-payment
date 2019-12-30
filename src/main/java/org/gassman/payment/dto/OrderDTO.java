@@ -12,4 +12,5 @@ public class OrderDTO {
     private BigDecimal totalToPay;
     private Integer quantity;
     private ProductDTO product;
+    private UserDTO user;
 }
