@@ -73,6 +73,17 @@ public class InternalCreditController {
         return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);
     }
 
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Boolean> addCredit(@PathVariable("userId") Long userId) {
+        Optional<UserCredit> userCredit = userCreditRepository.findById(userId);
+        if(userCredit.isPresent()){
+            userCreditRepository.deleteById(userId);
+            return new ResponseEntity<>(Boolean.TRUE, HttpStatus.OK);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("The user ID %d has not an internal credit in GasSMan",userId), null);
+        }
+    }
+
     @PutMapping("/{userId}/{credit}")
     public ResponseEntity<UserCredit> newCredit(@PathVariable("userId") Long userId, @PathVariable("credit") BigDecimal credit) {
         Optional<UserCredit> userCredit = userCreditRepository.findById(userId);
@@ -90,11 +101,13 @@ public class InternalCreditController {
     @GetMapping("/{userId}")
     public ResponseEntity<UserCredit> findCreditByUser(@PathVariable("userId") Long userId) {
         Optional<UserCredit> userCredit = userCreditRepository.findById(userId);
+        UserCredit userCreditInstance;
         if (!userCredit.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, String.format("The user ID %d has not an internal credit in GasSMan", userId), null);
+            userCreditInstance = new UserCredit(userId, BigDecimal.ZERO);
         } else {
-            return new ResponseEntity<>(userCredit.get(), HttpStatus.OK);
+            userCreditInstance = userCredit.get();
         }
+        return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);
     }
 
     @GetMapping("/all")
