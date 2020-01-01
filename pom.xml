@@ -13,6 +13,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <name>gassman-payment</name>
     <description>GasSMan - Payment Service</description>
+    <packaging>jar</packaging>
 
     <properties>
         <java.version>1.8</java.version>
