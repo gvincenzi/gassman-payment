@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -107,10 +106,11 @@ public class InternalCreditController {
 
         log.setUserCredit(userCreditInstance);
 
-        rechargeUserCreditLogRepository.save(log);
-
-        Message<RechargeUserCreditLog> msg = MessageBuilder.withPayload(log).build();
-        rechargeUserCreditChannel.send(msg);
+        if(log.getOldCredit().compareTo(log.getNewCredit()) != 0) {
+            rechargeUserCreditLogRepository.save(log);
+            Message<RechargeUserCreditLog> msg = MessageBuilder.withPayload(log).build();
+            rechargeUserCreditChannel.send(msg);
+        }
 
         return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);
     }
@@ -118,10 +118,8 @@ public class InternalCreditController {
     @GetMapping("/{userId}")
     public ResponseEntity<UserCredit> findCreditByUser(@PathVariable("userId") Long userId) {
         Optional<UserCredit> userCredit = userCreditRepository.findById(userId);
-        UserCredit userCreditInstance;
-        if (!userCredit.isPresent()) {
-            userCreditInstance = new UserCredit(userId, null, null,null, null, BigDecimal.ZERO);
-        } else {
+        UserCredit userCreditInstance = new UserCredit(userId, null, null,null, null, BigDecimal.ZERO);
+        if (userCredit.isPresent()) {
             userCreditInstance = userCredit.get();
         }
         return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);

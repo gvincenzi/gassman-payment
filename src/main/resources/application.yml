@@ -19,6 +19,8 @@ spring:
   cloud:
     stream:
       bindings:
+        userRegistrationChannel:
+          destination: gassman-user-registration
         orderPaymentChannel:
           destination: gassman-order-payment
         rechargeUserCreditChannel:
