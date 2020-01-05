@@ -21,6 +21,8 @@ spring:
       bindings:
         orderPaymentChannel:
           destination: gassman-order-payment
+        rechargeUserCreditChannel:
+          destination: gassman-recharge-user-credit
 
 eureka:
   instance:
