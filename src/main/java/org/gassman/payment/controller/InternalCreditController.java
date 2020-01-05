@@ -18,6 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,6 +115,17 @@ public class InternalCreditController {
         }
 
         return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);
+    }
+
+    @GetMapping("/{userId}/log")
+    public ResponseEntity<List<RechargeUserCreditLog>> findRechargeUserCreditLogByUserId(@PathVariable("userId") Long userId) {
+        Optional<UserCredit> userCredit = userCreditRepository.findById(userId);
+        List<RechargeUserCreditLog> logs = new ArrayList<>();
+        if (userCredit.isPresent()) {
+            logs = rechargeUserCreditLogRepository.findAllByUserCreditOrderByRechargeDateTimeDesc(userCredit.get());
+        }
+
+        return new ResponseEntity<>(logs, HttpStatus.OK);
     }
 
     @GetMapping("/{userId}")
