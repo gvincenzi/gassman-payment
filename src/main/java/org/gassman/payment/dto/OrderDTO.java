@@ -7,10 +7,6 @@ import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
-public class OrderDTO {
-    private Long orderId;
-    private BigDecimal totalToPay;
-    private Integer quantity;
+public class OrderDTO extends InternalOrderDTO {
     private ProductDTO product;
-    private UserDTO user;
 }

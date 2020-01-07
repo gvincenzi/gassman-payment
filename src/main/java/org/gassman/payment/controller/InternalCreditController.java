@@ -1,6 +1,6 @@
 package org.gassman.payment.controller;
 
-import org.gassman.payment.dto.OrderDTO;
+import org.gassman.payment.dto.InternalOrderDTO;
 import org.gassman.payment.dto.UserDTO;
 import org.gassman.payment.entity.*;
 import org.gassman.payment.repository.PaymentRepository;
@@ -19,7 +19,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,14 +41,13 @@ public class InternalCreditController {
     private MessageChannel rechargeUserCreditChannel;
 
     @GetMapping(value = "/make/payment")
-    public ResponseEntity<String> makePayment(@ModelAttribute OrderDTO order) {
+    public ResponseEntity<String> makePayment(@ModelAttribute InternalOrderDTO order) {
         Optional<UserCredit> userCredit = userCreditRepository.findById(order.getUser().getId());
         if (!userCredit.isPresent()) {
             return new ResponseEntity<>(String.format("The user ID %d has not an internal credit in GasSMan", order.getUser().getId()), HttpStatus.NOT_ACCEPTABLE);
         } else if (userCredit.get().getCredit().compareTo(order.getTotalToPay()) < 0) {
             return new ResponseEntity<>(String.format("Payment was not approved : insufficient credit. Total to pay : %s - Actual Credit for user ID %d : %s", order.getTotalToPay(), order.getUser().getId(), userCredit.get().getCredit()), HttpStatus.NOT_ACCEPTABLE);
         } else {
-
             Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(order.getOrderId());
             if(paymentPeristed.isPresent()){
                 return new ResponseEntity<>(String.format("This order (ID #%d) has already been paid",order.getOrderId()), HttpStatus.NOT_ACCEPTABLE);
