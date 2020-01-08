@@ -9,6 +9,7 @@ public interface MQBinding {
     String ORDER_PAYMENT = "orderPaymentChannel";
     String RECHARGE_USER_CREDIT = "rechargeUserCreditChannel";
     String USER_REGISTRATION = "userRegistrationChannel";
+    String USER_ORDER = "userOrderChannel";
 
     @Output(ORDER_PAYMENT)
     MessageChannel orderPaymentChannel();
@@ -18,4 +19,7 @@ public interface MQBinding {
 
     @Input(USER_REGISTRATION)
     SubscribableChannel userRegistrationChannel();
+
+    @Input(USER_ORDER)
+    SubscribableChannel userOrderChannel();
 }

@@ -25,6 +25,8 @@ spring:
           destination: gassman-order-payment
         rechargeUserCreditChannel:
           destination: gassman-recharge-user-credit
+        userOrderChannel:
+          destination: gassman-order-registration
 
 eureka:
   instance:
@@ -41,6 +43,7 @@ paypal:
   clientSecret: YOUR_SECRET
 
 message:
+  orderNotExist: "The order ID %d does not exist"
   userNotFound: "The user ID %d has not an internal credit in GasSMan"
   insufficientCredit: "Payment was not approved : insufficient credit. Total to pay : %s - Actual Credit for user ID %d : %s"
   alreadyPaid: "This order (ID #%d) has already been paid"

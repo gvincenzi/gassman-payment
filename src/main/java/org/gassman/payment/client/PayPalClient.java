@@ -32,7 +32,7 @@ public class PayPalClient {
         Map<String, Object> response = new HashMap();
         Amount amount = new Amount();
         amount.setCurrency("EUR");
-        amount.setTotal(orderDTO.getTotalToPay() != null ? orderDTO.getTotalToPay().toString() : BigDecimal.ZERO.toString());
+        amount.setTotal(orderDTO.computeTotalToPay() != null ? orderDTO.computeTotalToPay().toString() : BigDecimal.ZERO.toString());
         Transaction transaction = new Transaction();
         transaction.setAmount(amount);
         transaction.setDescription(String.format("GasSMan Payment for Order #%d", orderDTO.getOrderId()));

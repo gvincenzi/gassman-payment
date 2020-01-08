@@ -1,8 +1,8 @@
 package org.gassman.payment.controller;
 
-import org.gassman.payment.dto.InternalOrderDTO;
 import org.gassman.payment.dto.UserDTO;
 import org.gassman.payment.entity.*;
+import org.gassman.payment.repository.OrderRepository;
 import org.gassman.payment.repository.PaymentRepository;
 import org.gassman.payment.repository.RechargeUserCreditLogRepository;
 import org.gassman.payment.repository.UserCreditRepository;
@@ -36,6 +36,9 @@ public class InternalCreditController {
     private RechargeUserCreditLogRepository rechargeUserCreditLogRepository;
 
     @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
     private MessageChannel orderPaymentChannel;
 
     @Autowired
@@ -53,28 +56,33 @@ public class InternalCreditController {
     @Value("${message.paymentApproved}")
     public String paymentApproved;
 
-    @GetMapping(value = "/make/payment")
-    public ResponseEntity<String> makePayment(@ModelAttribute InternalOrderDTO order) {
-        Optional<UserCredit> userCredit = userCreditRepository.findById(order.getUser().getId());
-        if (!userCredit.isPresent()) {
-            return new ResponseEntity<>(String.format(userNotFound, order.getUser().getId()), HttpStatus.NOT_ACCEPTABLE);
-        } else if (userCredit.get().getCredit().compareTo(order.getTotalToPay()) < 0) {
-            return new ResponseEntity<>(String.format(insufficientCredit, order.getTotalToPay(), order.getUser().getId(), userCredit.get().getCredit()), HttpStatus.NOT_ACCEPTABLE);
+    @Value("${message.orderNotExist}")
+    public String orderNotExist;
+
+    @GetMapping(value = "/make/payment/{orderId}")
+    public ResponseEntity<String> makePayment(@PathVariable("orderId") Long orderId) {
+        Optional<Order> orderToPay = orderRepository.findById(orderId);
+        if (!orderToPay.isPresent()) {
+            return new ResponseEntity<>(String.format(orderNotExist, orderId), HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        UserCredit userCredit = orderToPay.get().getUserCredit();
+        if (userCredit.getCredit().compareTo(orderToPay.get().getTotalToPay()) < 0) {
+            return new ResponseEntity<>(String.format(insufficientCredit, orderToPay.get().getTotalToPay(), userCredit.getUserId(), userCredit.getCredit()), HttpStatus.NOT_ACCEPTABLE);
         } else {
-            Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(order.getOrderId());
+            Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(orderToPay.get().getOrderId());
             if(paymentPeristed.isPresent()){
-                return new ResponseEntity<>(String.format(alreadyPaid,order.getOrderId()), HttpStatus.NOT_ACCEPTABLE);
+                return new ResponseEntity<>(String.format(alreadyPaid,orderToPay.get().getOrderId()), HttpStatus.NOT_ACCEPTABLE);
             } else {
                 Payment payment = new Payment();
                 payment.setPaymentId("INTERNAL_PAYID_" + System.currentTimeMillis());
                 payment.setPaymentDateTime(LocalDateTime.now());
-                payment.setOrderId(order.getOrderId());
+                payment.setOrderId(orderToPay.get().getOrderId());
                 payment.setPaymentType(PaymentType.INTERNAL_CREDIT);
                 paymentRepository.save(payment);
-                UserCredit credit = userCredit.get();
-                BigDecimal newCredit = credit.getCredit().subtract(order.getTotalToPay());
-                credit.setCredit(newCredit);
-                userCreditRepository.save(credit);
+                BigDecimal newCredit = userCredit.getCredit().subtract(orderToPay.get().getTotalToPay());
+                userCredit.setCredit(newCredit);
+                userCreditRepository.save(userCredit);
 
                 Message<org.gassman.payment.entity.Payment> msg = MessageBuilder.withPayload(payment).build();
                 orderPaymentChannel.send(msg);
