@@ -22,15 +22,20 @@ public class PayPalClient {
     private String clientId;
     @Value("${paypal.clientSecret}")
     private String clientSecret;
+    @Value("${paypal.active}")
+    private Boolean active;
 
-    public Map<String, Object> createPayment(OrderDTO orderDTO) {
+
+    public Map<String, Object> createPayment(OrderDTO orderDTO) throws PayPalRESTException {
+        checkActive();
+
         Map<String, Object> response = new HashMap();
         Amount amount = new Amount();
         amount.setCurrency("EUR");
         amount.setTotal(orderDTO.getTotalToPay() != null ? orderDTO.getTotalToPay().toString() : BigDecimal.ZERO.toString());
         Transaction transaction = new Transaction();
         transaction.setAmount(amount);
-        transaction.setDescription(String.format("GasSMan Payment for Order #%d",orderDTO.getOrderId()));
+        transaction.setDescription(String.format("GasSMan Payment for Order #%d", orderDTO.getOrderId()));
         transaction.setCustom(orderDTO.getOrderId().toString());
         List<Transaction> transactions = new ArrayList();
         transactions.add(transaction);
@@ -55,35 +60,39 @@ public class PayPalClient {
         payment.setIntent("sale");
         payment.setPayer(payer);
         payment.setTransactions(transactions);
-        payment.setNoteToPayer("Delivery : "  + LocalDateTime.parse(orderDTO.getProduct().getDeliveryDateTime()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+        payment.setNoteToPayer("Delivery : " + LocalDateTime.parse(orderDTO.getProduct().getDeliveryDateTime()).format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
 
         RedirectUrls redirectUrls = new RedirectUrls();
         redirectUrls.setCancelUrl("http://localhost:8881/gassman-payment-service/paypal/cancel");
         redirectUrls.setReturnUrl("http://localhost:8881/gassman-payment-service/paypal/process");
         payment.setRedirectUrls(redirectUrls);
         Payment createdPayment;
-        try {
-            String redirectUrl = "";
-            APIContext context = new APIContext(clientId, clientSecret, "sandbox");
-            createdPayment = payment.create(context);
-            if (createdPayment != null) {
-                List<Links> links = createdPayment.getLinks();
-                for (Links link : links) {
-                    if (link.getRel().equals("approval_url")) {
-                        redirectUrl = link.getHref();
-                        break;
-                    }
+        String redirectUrl = "";
+        APIContext context = new APIContext(clientId, clientSecret, "sandbox");
+        createdPayment = payment.create(context);
+        if (createdPayment != null) {
+            List<Links> links = createdPayment.getLinks();
+            for (Links link : links) {
+                if (link.getRel().equals("approval_url")) {
+                    redirectUrl = link.getHref();
+                    break;
                 }
-                response.put("status", "success");
-                response.put("redirect_url", redirectUrl);
             }
-        } catch (PayPalRESTException e) {
-            System.out.println("Error happened during payment creation!");
+            response.put("status", "success");
+            response.put("redirect_url", redirectUrl);
         }
         return response;
     }
 
+    private void checkActive() throws PayPalRESTException {
+        if (!active) {
+            throw new PayPalRESTException("PayPal Payment not active");
+        }
+    }
+
     public Payment completePayment(HttpServletRequest req) throws PayPalRESTException {
+        checkActive();
+
         Payment payment = new Payment();
         payment.setId(req.getParameter("paymentId"));
 

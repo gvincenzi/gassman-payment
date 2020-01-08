@@ -38,14 +38,14 @@ public class PayPalController {
     private MessageChannel orderPaymentChannel;
 
     @GetMapping(value = "/make/payment")
-    public void makePayment(@ModelAttribute OrderDTO order, HttpServletResponse httpServletResponse) {
+    public void makePayment(@ModelAttribute OrderDTO order, HttpServletResponse httpServletResponse) throws PayPalRESTException {
         Map<String, Object> payment = payPalClient.createPayment(order);
         httpServletResponse.setHeader("Location", (String)payment.get("redirect_url"));
         httpServletResponse.setStatus(302);
     }
 
     @GetMapping("/process")
-    public ResponseEntity<String> processPayment(HttpServletRequest request){
+    public ResponseEntity<String> processPayment(HttpServletRequest request) throws PayPalRESTException{
         try {
             Payment paymentPayPal = payPalClient.completePayment(request);
             if ("approved".equalsIgnoreCase(paymentPayPal.getState()) && !paymentPayPal.getTransactions().isEmpty()) {

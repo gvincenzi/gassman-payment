@@ -7,6 +7,7 @@ import org.gassman.payment.repository.PaymentRepository;
 import org.gassman.payment.repository.RechargeUserCreditLogRepository;
 import org.gassman.payment.repository.UserCreditRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
@@ -40,17 +41,29 @@ public class InternalCreditController {
     @Autowired
     private MessageChannel rechargeUserCreditChannel;
 
+    @Value("${message.userNotFound}")
+    public String userNotFound;
+
+    @Value("${message.insufficientCredit}")
+    public String insufficientCredit;
+
+    @Value("${message.alreadyPaid}")
+    public String alreadyPaid;
+
+    @Value("${message.paymentApproved}")
+    public String paymentApproved;
+
     @GetMapping(value = "/make/payment")
     public ResponseEntity<String> makePayment(@ModelAttribute InternalOrderDTO order) {
         Optional<UserCredit> userCredit = userCreditRepository.findById(order.getUser().getId());
         if (!userCredit.isPresent()) {
-            return new ResponseEntity<>(String.format("The user ID %d has not an internal credit in GasSMan", order.getUser().getId()), HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(String.format(userNotFound, order.getUser().getId()), HttpStatus.NOT_ACCEPTABLE);
         } else if (userCredit.get().getCredit().compareTo(order.getTotalToPay()) < 0) {
-            return new ResponseEntity<>(String.format("Payment was not approved : insufficient credit. Total to pay : %s - Actual Credit for user ID %d : %s", order.getTotalToPay(), order.getUser().getId(), userCredit.get().getCredit()), HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(String.format(insufficientCredit, order.getTotalToPay(), order.getUser().getId(), userCredit.get().getCredit()), HttpStatus.NOT_ACCEPTABLE);
         } else {
             Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(order.getOrderId());
             if(paymentPeristed.isPresent()){
-                return new ResponseEntity<>(String.format("This order (ID #%d) has already been paid",order.getOrderId()), HttpStatus.NOT_ACCEPTABLE);
+                return new ResponseEntity<>(String.format(alreadyPaid,order.getOrderId()), HttpStatus.NOT_ACCEPTABLE);
             } else {
                 Payment payment = new Payment();
                 payment.setPaymentId("INTERNAL_PAYID_" + System.currentTimeMillis());
@@ -65,7 +78,7 @@ public class InternalCreditController {
 
                 Message<org.gassman.payment.entity.Payment> msg = MessageBuilder.withPayload(payment).build();
                 orderPaymentChannel.send(msg);
-                return new ResponseEntity<>("Payment succesfully approved", HttpStatus.OK);
+                return new ResponseEntity<>(paymentApproved, HttpStatus.OK);
             }
         }
     }
@@ -79,7 +92,7 @@ public class InternalCreditController {
             userCreditRepository.deleteById(userId);
             return new ResponseEntity<>(Boolean.TRUE, HttpStatus.OK);
         } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("The user ID %d has not an internal credit in GasSMan",userId), null);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(userNotFound,userId), null);
         }
     }
 
