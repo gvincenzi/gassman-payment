@@ -27,6 +27,10 @@ spring:
           destination: gassman-recharge-user-credit
         userOrderChannel:
           destination: gassman-order-registration
+        userCancellationChannel:
+          destination: gassman-user-cancellation
+        orderCancellationChannel:
+          destination: gassman-order-cancellation
 
 eureka:
   instance:

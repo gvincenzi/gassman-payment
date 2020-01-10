@@ -6,6 +6,7 @@ import org.gassman.payment.repository.OrderRepository;
 import org.gassman.payment.repository.PaymentRepository;
 import org.gassman.payment.repository.RechargeUserCreditLogRepository;
 import org.gassman.payment.repository.UserCreditRepository;
+import org.gassman.payment.service.InternalPaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -42,7 +43,7 @@ public class InternalCreditController {
     private MessageChannel orderPaymentChannel;
 
     @Autowired
-    private MessageChannel rechargeUserCreditChannel;
+    private InternalPaymentService internalPaymentService;
 
     @Value("${message.userNotFound}")
     public String userNotFound;
@@ -106,33 +107,7 @@ public class InternalCreditController {
 
     @PostMapping("/{credit}")
     public ResponseEntity<UserCredit> newCredit(@RequestBody UserDTO user, @PathVariable("credit") BigDecimal credit) {
-        Optional<UserCredit> userCredit = userCreditRepository.findById(user.getId());
-        UserCredit userCreditInstance;
-
-        // LOG Transaction
-        RechargeUserCreditLog log = new RechargeUserCreditLog();
-        log.setNewCredit(credit);
-        log.setRechargeDateTime(LocalDateTime.now());
-        log.setRechargeUserCreditType(RechargeUserCreditType.WEB_ADMIN);
-
-        if (!userCredit.isPresent()) {
-            userCreditInstance = new UserCredit(user.getId(), user.getName(), user.getSurname(), user.getMail(), user.getTelegramUserId(), credit);
-            log.setOldCredit(BigDecimal.ZERO);
-        } else {
-            userCreditInstance = userCredit.get();
-            log.setOldCredit(userCreditInstance.getCredit());
-            userCreditInstance.setCredit(credit);
-        }
-        userCreditInstance = userCreditRepository.save(userCreditInstance);
-
-        log.setUserCredit(userCreditInstance);
-
-        if(log.getOldCredit().compareTo(log.getNewCredit()) != 0) {
-            rechargeUserCreditLogRepository.save(log);
-            Message<RechargeUserCreditLog> msg = MessageBuilder.withPayload(log).build();
-            rechargeUserCreditChannel.send(msg);
-        }
-
+        UserCredit userCreditInstance = internalPaymentService.userCreditUpdateCredit(user,credit,RechargeUserCreditType.WEB_ADMIN);
         return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);
     }
 
