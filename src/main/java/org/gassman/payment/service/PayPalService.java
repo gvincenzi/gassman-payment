@@ -1,4 +1,4 @@
-package org.gassman.payment.client;
+package org.gassman.payment.service;
 
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class PayPalClient {
+public class PayPalService {
     @Value("${paypal.clientId}")
     private String clientId;
     @Value("${paypal.clientSecret}")

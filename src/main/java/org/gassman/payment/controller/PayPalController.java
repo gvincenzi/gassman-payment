@@ -3,7 +3,7 @@ package org.gassman.payment.controller;
 import com.paypal.api.payments.Payment;
 import com.paypal.api.payments.Transaction;
 import com.paypal.base.rest.PayPalRESTException;
-import org.gassman.payment.client.PayPalClient;
+import org.gassman.payment.service.PayPalService;
 import org.gassman.payment.dto.OrderDTO;
 import org.gassman.payment.entity.PaymentType;
 import org.gassman.payment.repository.PaymentRepository;
@@ -29,7 +29,7 @@ import java.util.Map;
 @RequestMapping(value = "/paypal")
 public class PayPalController {
     @Autowired
-    private PayPalClient payPalClient;
+    private PayPalService payPalService;
 
     @Autowired
     private PaymentRepository paymentRepository;
@@ -39,7 +39,7 @@ public class PayPalController {
 
     @GetMapping(value = "/make/payment")
     public void makePayment(@ModelAttribute OrderDTO order, HttpServletResponse httpServletResponse) throws PayPalRESTException {
-        Map<String, Object> payment = payPalClient.createPayment(order);
+        Map<String, Object> payment = payPalService.createPayment(order);
         httpServletResponse.setHeader("Location", (String)payment.get("redirect_url"));
         httpServletResponse.setStatus(302);
     }
@@ -47,7 +47,7 @@ public class PayPalController {
     @GetMapping("/process")
     public ResponseEntity<String> processPayment(HttpServletRequest request) throws PayPalRESTException{
         try {
-            Payment paymentPayPal = payPalClient.completePayment(request);
+            Payment paymentPayPal = payPalService.completePayment(request);
             if ("approved".equalsIgnoreCase(paymentPayPal.getState()) && !paymentPayPal.getTransactions().isEmpty()) {
                 Transaction transaction = paymentPayPal.getTransactions().iterator().next();
                 org.gassman.payment.entity.Payment payment = new org.gassman.payment.entity.Payment();

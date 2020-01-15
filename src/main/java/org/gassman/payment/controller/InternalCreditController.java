@@ -1,5 +1,7 @@
 package org.gassman.payment.controller;
 
+import org.gassman.payment.client.OrderResourceClient;
+import org.gassman.payment.dto.OrderDTO;
 import org.gassman.payment.dto.UserDTO;
 import org.gassman.payment.entity.*;
 import org.gassman.payment.repository.OrderRepository;
@@ -45,6 +47,9 @@ public class InternalCreditController {
     @Autowired
     private InternalPaymentService internalPaymentService;
 
+    @Autowired
+    private OrderResourceClient orderResourceClient;
+
     @Value("${message.userNotFound}")
     public String userNotFound;
 
@@ -63,25 +68,34 @@ public class InternalCreditController {
     @GetMapping(value = "/make/payment/{orderId}")
     public ResponseEntity<String> makePayment(@PathVariable("orderId") Long orderId) {
         Optional<Order> orderToPay = orderRepository.findById(orderId);
+        Order order = null;
         if (!orderToPay.isPresent()) {
-            return new ResponseEntity<>(String.format(orderNotExist, orderId), HttpStatus.NOT_ACCEPTABLE);
+            OrderDTO orderToPayRemote = orderResourceClient.findOrderById(orderId);
+            if(orderToPayRemote != null){
+                order = internalPaymentService.processUserOrder(orderToPayRemote);
+            } else {
+                return new ResponseEntity<>(String.format(orderNotExist, orderId), HttpStatus.NOT_ACCEPTABLE);
+            }
+        } else {
+            order = orderToPay.get();
         }
 
-        UserCredit userCredit = orderToPay.get().getUserCredit();
-        if (userCredit.getCredit().compareTo(orderToPay.get().getTotalToPay()) < 0) {
-            return new ResponseEntity<>(String.format(insufficientCredit, orderToPay.get().getTotalToPay(), userCredit.getUserId(), userCredit.getCredit()), HttpStatus.NOT_ACCEPTABLE);
+        UserCredit userCredit = order.getUserCredit();
+        if (userCredit.getCredit().compareTo(order.getTotalToPay()) < 0) {
+            return new ResponseEntity<>(String.format(insufficientCredit, order.getTotalToPay(), userCredit.getUserId(), userCredit.getCredit()), HttpStatus.NOT_ACCEPTABLE);
         } else {
-            Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(orderToPay.get().getOrderId());
+            Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(order.getOrderId());
             if(paymentPeristed.isPresent()){
-                return new ResponseEntity<>(String.format(alreadyPaid,orderToPay.get().getOrderId()), HttpStatus.NOT_ACCEPTABLE);
+
+                return new ResponseEntity<>(String.format(alreadyPaid,order.getOrderId()), HttpStatus.NOT_ACCEPTABLE);
             } else {
                 Payment payment = new Payment();
                 payment.setPaymentId("INTERNAL_PAYID_" + System.currentTimeMillis());
                 payment.setPaymentDateTime(LocalDateTime.now());
-                payment.setOrderId(orderToPay.get().getOrderId());
+                payment.setOrderId(order.getOrderId());
                 payment.setPaymentType(PaymentType.INTERNAL_CREDIT);
                 paymentRepository.save(payment);
-                BigDecimal newCredit = userCredit.getCredit().subtract(orderToPay.get().getTotalToPay());
+                BigDecimal newCredit = userCredit.getCredit().subtract(order.getTotalToPay());
                 userCredit.setCredit(newCredit);
                 userCreditRepository.save(userCredit);
 
@@ -130,6 +144,22 @@ public class InternalCreditController {
             userCreditInstance = userCredit.get();
         }
         return new ResponseEntity<>(userCreditInstance, HttpStatus.OK);
+    }
+
+    @GetMapping("/{userId}/order")
+    public ResponseEntity<List<Order>> findOrdersByUser(@PathVariable("userId") Long userId) {
+        return new ResponseEntity<>(orderRepository.findByUserCreditUserId(userId), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{userId}/order/{orderId}")
+    public ResponseEntity<Boolean> findOrdersByUser(@PathVariable("userId") Long userId, @PathVariable("orderId") Long orderId) {
+        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        if(orderOptional.isPresent()){
+            orderRepository.deleteById(orderId);
+            return new ResponseEntity<>(Boolean.TRUE, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(Boolean.FALSE, HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping
