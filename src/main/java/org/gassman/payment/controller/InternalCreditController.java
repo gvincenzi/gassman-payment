@@ -151,6 +151,15 @@ public class InternalCreditController {
         return new ResponseEntity<>(orderRepository.findByUserCreditUserId(userId), HttpStatus.OK);
     }
 
+    @GetMapping("/totalUserCredit")
+    public ResponseEntity<BigDecimal> totalUserCredit() {
+        BigDecimal total = BigDecimal.ZERO;
+        for(UserCredit userCredit : userCreditRepository.findAll()){
+            total = total.add(userCredit.getCredit());
+        }
+        return new ResponseEntity<>(total, HttpStatus.OK);
+    }
+
     @DeleteMapping("/{userId}/order/{orderId}")
     public ResponseEntity<Boolean> findOrdersByUser(@PathVariable("userId") Long userId, @PathVariable("orderId") Long orderId) {
         Optional<Order> orderOptional = orderRepository.findById(orderId);
