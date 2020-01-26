@@ -58,3 +58,8 @@ feign:
 api:
   username:
   password:
+
+gassman:
+  api:
+    username:
+    password:

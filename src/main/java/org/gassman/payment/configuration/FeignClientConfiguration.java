@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class FeignClientConfiguration {
-    @Value("${api.username}")
+    @Value("${gassman.api.username}")
     private String username;
-    @Value("${api.password}")
+    @Value("${gassman.api.password}")
     private String password;
 
     @Bean
