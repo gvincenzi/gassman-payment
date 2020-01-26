@@ -41,14 +41,20 @@ eureka:
     serviceUrl:
       defaultZone: http://localhost:8880/eureka
 
-paypal:
-  active: false
-  clientId: YOUR_CLIENT_ID
-  clientSecret: YOUR_SECRET
-
 message:
   orderNotExist: "The order ID %d does not exist"
   userNotFound: "The user ID %d has not an internal credit in GasSMan"
   insufficientCredit: "Payment was not approved : insufficient credit. Total to pay : %s - Actual Credit for user ID %d : %s"
   alreadyPaid: "This order (ID #%d) has already been paid"
   paymentApproved: "Payment succesfully approved"
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 15000
+        readTimeout: 15000
+
+api:
+  username:
+  password:

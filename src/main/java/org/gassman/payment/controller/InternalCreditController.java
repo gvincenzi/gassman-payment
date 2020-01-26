@@ -65,47 +65,6 @@ public class InternalCreditController {
     @Value("${message.orderNotExist}")
     public String orderNotExist;
 
-    @GetMapping(value = "/make/payment/{orderId}")
-    public ResponseEntity<String> makePayment(@PathVariable("orderId") Long orderId) {
-        Optional<Order> orderToPay = orderRepository.findById(orderId);
-        Order order = null;
-        if (!orderToPay.isPresent()) {
-            OrderDTO orderToPayRemote = orderResourceClient.findOrderById(orderId);
-            if(orderToPayRemote != null){
-                order = internalPaymentService.processUserOrder(orderToPayRemote);
-            } else {
-                return new ResponseEntity<>(String.format(orderNotExist, orderId), HttpStatus.NOT_ACCEPTABLE);
-            }
-        } else {
-            order = orderToPay.get();
-        }
-
-        UserCredit userCredit = order.getUserCredit();
-        if (userCredit.getCredit().compareTo(order.getTotalToPay()) < 0) {
-            return new ResponseEntity<>(String.format(insufficientCredit, order.getTotalToPay(), userCredit.getUserId(), userCredit.getCredit()), HttpStatus.NOT_ACCEPTABLE);
-        } else {
-            Optional<Payment> paymentPeristed = paymentRepository.findByOrderId(order.getOrderId());
-            if(paymentPeristed.isPresent()){
-
-                return new ResponseEntity<>(String.format(alreadyPaid,order.getOrderId()), HttpStatus.NOT_ACCEPTABLE);
-            } else {
-                Payment payment = new Payment();
-                payment.setPaymentId("INTERNAL_PAYID_" + System.currentTimeMillis());
-                payment.setPaymentDateTime(LocalDateTime.now());
-                payment.setOrderId(order.getOrderId());
-                payment.setPaymentType(PaymentType.INTERNAL_CREDIT);
-                paymentRepository.save(payment);
-                BigDecimal newCredit = userCredit.getCredit().subtract(order.getTotalToPay());
-                userCredit.setCredit(newCredit);
-                userCreditRepository.save(userCredit);
-
-                Message<org.gassman.payment.entity.Payment> msg = MessageBuilder.withPayload(payment).build();
-                orderPaymentChannel.send(msg);
-                return new ResponseEntity<>(paymentApproved, HttpStatus.OK);
-            }
-        }
-    }
-
     @Transactional
     @DeleteMapping("/{userId}")
     public ResponseEntity<Boolean> removeCredit(@PathVariable("userId") Long userId) {
