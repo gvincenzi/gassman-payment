@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.gassman</groupId>
     <artifactId>gassman-payment</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>gassman-payment</name>
     <description>GasSMan - Payment Service</description>
     <packaging>jar</packaging>
