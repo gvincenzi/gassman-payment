@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,4 +20,6 @@ public class Payment {
     private Long orderId;
     @Column
     private PaymentType paymentType;
+    @Column
+    private BigDecimal amount;
 }
