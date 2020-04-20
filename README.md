@@ -36,7 +36,8 @@ gassman:
 ```
 
 La chiave `rabbitmq` dovrà contenere l'indirizzo AMQP della vostra installazione di RabbitMQ.
-La chiave API è una coppia username/password che sarà utilizzata per le chiamate ai servizi REST in BasicAuth : l'encoder che è utilizzato nell'implementazione proposta è `BCryptPasswordEncoder`.
+
+La chiave `api` è una coppia username/password che sarà utilizzata per le chiamate ai servizi REST in BasicAuth : l'encoder che è utilizzato nell'implementazione proposta è `BCryptPasswordEncoder`.
 Se volete ad esempio usera la coppia username/passwaord `api/gassman`, dovrete inserire nel file di propeties :
 ```yaml
 rabbitmq :
@@ -46,7 +47,7 @@ api:
   password: $2a$10$ID/NjgCJ2tm2BCFCIdaV2.Z.Ttz2KrD1FtKebdLMooMDXu8OIYAdy
 ```
 
-La chiave gassman>api è usata invece dal modulo come credenziali per le chiamate REST in uscita. Usando le credenziali di esempio citate in precedenza qui dunque metteremmo :
+La chiave `gassman>api` è usata invece dal modulo come credenziali per le chiamate REST in uscita. Usando le credenziali di esempio citate in precedenza qui dunque metteremmo :
 ```yaml
 rabbitmq :
     addresses: amqp://***
